@@ -14,7 +14,6 @@ public partial class RenderPane : Page, IDockablePaneProvider
 {
     private string? _lastResultUrl;
     private CancellationTokenSource? _cts;
-    private UIApplication? _uiApp;
 
     public RenderPane()
     {
@@ -23,7 +22,6 @@ public partial class RenderPane : Page, IDockablePaneProvider
         CheckApiKey();
     }
 
-    // Called by Revit when it sets up the dockable pane
     public void SetupDockablePane(DockablePaneProviderData data)
     {
         data.FrameworkElement = this;
@@ -34,34 +32,27 @@ public partial class RenderPane : Page, IDockablePaneProvider
         };
     }
 
-    // Called by Revit to inject the UIApplication so we can access the document
-    internal void SetApplication(UIApplication uiApp) => _uiApp = uiApp;
+    internal void RefreshApiKeyState() => CheckApiKey();
 
     private void CheckApiKey()
     {
         var key = CredentialStore.LoadApiKey();
-        NoKeyBanner.Visibility = string.IsNullOrWhiteSpace(key)
-            ? Visibility.Visible
-            : Visibility.Collapsed;
-        RenderButton.IsEnabled = !string.IsNullOrWhiteSpace(key);
+        var hasKey = !string.IsNullOrWhiteSpace(key);
+        NoKeyBanner.Visibility = hasKey ? Visibility.Collapsed : Visibility.Visible;
+        RenderButton.IsEnabled = hasKey;
     }
 
     private void RenderTypeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         var selected = (RenderTypeCombo.SelectedItem as ComboBoxItem)?.Content?.ToString();
-        ExteriorOptions.Visibility = selected == "Interior"
-            ? Visibility.Collapsed
-            : Visibility.Visible;
+        if (ExteriorOptions != null)
+            ExteriorOptions.Visibility = selected == "Interior"
+                ? Visibility.Collapsed
+                : Visibility.Visible;
     }
 
-    private async void RenderButton_Click(object sender, RoutedEventArgs e)
+    private void RenderButton_Click(object sender, RoutedEventArgs e)
     {
-        if (_uiApp is null)
-        {
-            ShowStatus("Revit connection not available. Please restart Revit.", isError: true);
-            return;
-        }
-
         var apiKey = CredentialStore.LoadApiKey();
         if (string.IsNullOrWhiteSpace(apiKey))
         {
@@ -69,74 +60,76 @@ public partial class RenderPane : Page, IDockablePaneProvider
             return;
         }
 
-        var uiDoc = _uiApp.ActiveUIDocument;
-        if (uiDoc is null)
+        if (App.RenderEvent is null)
         {
-            ShowStatus("No document is open.", isError: true);
+            ShowStatus("Revit event handler not initialised. Please restart Revit.", isError: true);
             return;
         }
-
-        var view = ViewExporter.GetActive3DView(uiDoc);
-        if (view is null)
-        {
-            ShowStatus("Please activate a 3D view before generating a render.", isError: true);
-            return;
-        }
-
-        SetBusy(true);
 
         _cts?.Cancel();
         _cts = new CancellationTokenSource();
+        var options = BuildOptions();
 
-        try
+        SetBusy(true);
+        ShowStatus("Exporting view...");
+
+        // Wire up callbacks — these fire on the Revit API thread, then we dispatch back to UI
+        App.RenderHandler.OnExported = async (bytes) =>
         {
-            ShowStatus("Exporting view...");
-            byte[] imageBytes = null!;
-
-            // Export must run on Revit's API thread — we're already there since this is a UI event
-            // triggered from the dockable pane, which runs in Revit's context.
-            imageBytes = ViewExporter.ExportToPng(uiDoc.Document, view);
-
-            ShowStatus("Sending to ArchRender...");
-
-            var options = BuildOptions();
-            var client = new ApiClient(apiKey);
-            var result = await client.GenerateRenderAsync(imageBytes, options, _cts.Token);
-
-            _lastResultUrl = result.ImageUrl;
-            await ShowResultAsync(result.ImageUrl);
-
-            if (result.CreditsRemaining >= 0)
+            await Dispatcher.InvokeAsync(async () =>
             {
-                CreditsText.Text = $"{result.CreditsRemaining} credits remaining";
-                CreditsText.Visibility = Visibility.Visible;
-            }
+                ShowStatus("Sending to ArchRender...");
+                try
+                {
+                    var client = new ApiClient(apiKey);
+                    var result = await client.GenerateRenderAsync(bytes, options, _cts.Token);
+                    _lastResultUrl = result.ImageUrl;
+                    ShowResultImage(result.ImageUrl);
 
-            StatusText.Visibility = Visibility.Collapsed;
-        }
-        catch (OperationCanceledException)
+                    if (result.CreditsRemaining >= 0)
+                    {
+                        CreditsText.Text = $"{result.CreditsRemaining} credits remaining";
+                        CreditsText.Visibility = Visibility.Visible;
+                    }
+
+                    StatusText.Visibility = Visibility.Collapsed;
+                }
+                catch (OperationCanceledException)
+                {
+                    ShowStatus("Cancelled.");
+                }
+                catch (ApiException ex) when (ex.StatusCode == 401)
+                {
+                    ShowStatus("Invalid API key. Please check your settings.", isError: true);
+                }
+                catch (ApiException ex) when (ex.StatusCode == 402)
+                {
+                    ShowStatus("Not enough credits. Visit archrender.com to top up.", isError: true);
+                }
+                catch (Exception ex)
+                {
+                    ShowStatus($"Error: {ex.Message}", isError: true);
+                }
+                finally
+                {
+                    SetBusy(false);
+                }
+            });
+        };
+
+        App.RenderHandler.OnError = (msg) =>
         {
-            ShowStatus("Cancelled.", isError: false);
-        }
-        catch (ApiException ex) when (ex.StatusCode == 401)
-        {
-            ShowStatus("Invalid API key. Please check your settings.", isError: true);
-        }
-        catch (ApiException ex) when (ex.StatusCode == 402)
-        {
-            ShowStatus("Not enough credits. Visit archrender.com to top up.", isError: true);
-        }
-        catch (Exception ex)
-        {
-            ShowStatus($"Error: {ex.Message}", isError: true);
-        }
-        finally
-        {
-            SetBusy(false);
-        }
+            Dispatcher.Invoke(() =>
+            {
+                ShowStatus(msg, isError: true);
+                SetBusy(false);
+            });
+        };
+
+        App.RenderEvent.Raise();
     }
 
-    private async Task ShowResultAsync(string imageUrl)
+    private void ShowResultImage(string imageUrl)
     {
         var bitmap = new BitmapImage();
         bitmap.BeginInit();
@@ -164,7 +157,7 @@ public partial class RenderPane : Page, IDockablePaneProvider
 
         try
         {
-            using var http = new System.Net.Http.HttpClient();
+            using var http = new HttpClient();
             var bytes = await http.GetByteArrayAsync(_lastResultUrl);
             await File.WriteAllBytesAsync(dialog.FileName, bytes);
             ShowStatus($"Saved to {dialog.FileName}");
@@ -177,7 +170,6 @@ public partial class RenderPane : Page, IDockablePaneProvider
 
     private void ResultImage_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
-        // Open full-size in browser on double-click
         if (e.ClickCount == 2 && _lastResultUrl is not null)
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(_lastResultUrl)
             {
@@ -187,8 +179,9 @@ public partial class RenderPane : Page, IDockablePaneProvider
 
     private void MaterialDetailsBox_TextChanged(object sender, TextChangedEventArgs e)
     {
-        MaterialDetailsPlaceholder.Visibility = string.IsNullOrEmpty(MaterialDetailsBox.Text)
-            ? Visibility.Visible : Visibility.Collapsed;
+        if (MaterialDetailsPlaceholder != null)
+            MaterialDetailsPlaceholder.Visibility = string.IsNullOrEmpty(MaterialDetailsBox.Text)
+                ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private RenderOptions BuildOptions() => new()
@@ -203,7 +196,7 @@ public partial class RenderPane : Page, IDockablePaneProvider
 
     private void SetBusy(bool busy)
     {
-        RenderButton.IsEnabled = !busy;
+        RenderButton.IsEnabled = !busy && !string.IsNullOrWhiteSpace(CredentialStore.LoadApiKey());
         ProgressBar.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
     }
 

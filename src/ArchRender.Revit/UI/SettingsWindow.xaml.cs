@@ -25,6 +25,7 @@ public partial class SettingsWindow : Window
 
         CredentialStore.SaveApiKey(key);
         ShowStatus("API key saved.", error: false);
+        NotifyRenderPane();
     }
 
     private void ClearKey_Click(object sender, RoutedEventArgs e)
@@ -32,9 +33,20 @@ public partial class SettingsWindow : Window
         CredentialStore.Clear();
         ApiKeyBox.Password = "";
         ShowStatus("API key cleared.", error: false);
+        NotifyRenderPane();
     }
 
     private void Cancel_Click(object sender, RoutedEventArgs e) => Close();
+
+    private static void NotifyRenderPane()
+    {
+        // Refresh the render pane's button/banner state after key changes
+        if (System.Windows.Application.Current?.MainWindow is { } main)
+        {
+            var pane = main.FindName("RenderPaneContent") as RenderPane;
+            pane?.RefreshApiKeyState();
+        }
+    }
 
     private void ShowStatus(string message, bool error)
     {
