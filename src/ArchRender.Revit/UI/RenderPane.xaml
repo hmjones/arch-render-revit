@@ -1,0 +1,141 @@
+<Page x:Class="ArchRender.Revit.UI.RenderPane"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      Background="#1a1a1a"
+      FontFamily="Segoe UI"
+      FontSize="12">
+
+  <Page.Resources>
+    <Style x:Key="Label" TargetType="TextBlock">
+      <Setter Property="Foreground" Value="#9ca3af"/>
+      <Setter Property="Margin" Value="0,8,0,3"/>
+    </Style>
+    <Style x:Key="Combo" TargetType="ComboBox">
+      <Setter Property="Background" Value="#2d2d2d"/>
+      <Setter Property="Foreground" Value="#f3f4f6"/>
+      <Setter Property="BorderBrush" Value="#3d3d3d"/>
+      <Setter Property="Padding" Value="6,4"/>
+    </Style>
+    <Style x:Key="TextBox" TargetType="TextBox">
+      <Setter Property="Background" Value="#2d2d2d"/>
+      <Setter Property="Foreground" Value="#f3f4f6"/>
+      <Setter Property="BorderBrush" Value="#3d3d3d"/>
+      <Setter Property="Padding" Value="6,4"/>
+    </Style>
+    <Style x:Key="PrimaryButton" TargetType="Button">
+      <Setter Property="Background" Value="#2563eb"/>
+      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Padding" Value="0,10"/>
+      <Setter Property="FontSize" Value="13"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="Cursor" Value="Hand"/>
+    </Style>
+  </Page.Resources>
+
+  <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <StackPanel Margin="12">
+
+      <!-- Header -->
+      <TextBlock Text="ArchRender" FontSize="16" FontWeight="Bold"
+                 Foreground="White" Margin="0,0,0,12"/>
+
+      <!-- No API key warning -->
+      <Border x:Name="NoKeyBanner" Background="#7c2d12" CornerRadius="4"
+              Padding="10" Margin="0,0,0,12" Visibility="Collapsed">
+        <TextBlock Foreground="#fed7aa" TextWrapping="Wrap">
+          No API key configured. Open Settings to add your ArchRender API key.
+        </TextBlock>
+      </Border>
+
+      <!-- Render Type -->
+      <TextBlock Style="{StaticResource Label}" Text="Render Type"/>
+      <ComboBox x:Name="RenderTypeCombo" Style="{StaticResource Combo}">
+        <ComboBoxItem Content="Exterior" IsSelected="True"/>
+        <ComboBoxItem Content="Interior"/>
+      </ComboBox>
+
+      <!-- Exterior-only options -->
+      <StackPanel x:Name="ExteriorOptions">
+        <TextBlock Style="{StaticResource Label}" Text="Season"/>
+        <ComboBox x:Name="SeasonCombo" Style="{StaticResource Combo}">
+          <ComboBoxItem Content="Spring"/>
+          <ComboBoxItem Content="Summer" IsSelected="True"/>
+          <ComboBoxItem Content="Fall"/>
+          <ComboBoxItem Content="Winter"/>
+        </ComboBox>
+
+        <TextBlock Style="{StaticResource Label}" Text="Environment"/>
+        <ComboBox x:Name="EnvironmentCombo" Style="{StaticResource Combo}">
+          <ComboBoxItem Content="Mountains"/>
+          <ComboBoxItem Content="Desert"/>
+          <ComboBoxItem Content="Coastal"/>
+          <ComboBoxItem Content="Forest"/>
+          <ComboBoxItem Content="Urban"/>
+          <ComboBoxItem Content="Suburban" IsSelected="True"/>
+          <ComboBoxItem Content="Rural"/>
+        </ComboBox>
+      </StackPanel>
+
+      <!-- Time of Day (shared) -->
+      <TextBlock Style="{StaticResource Label}" Text="Time of Day"/>
+      <ComboBox x:Name="TimeOfDayCombo" Style="{StaticResource Combo}">
+        <ComboBoxItem Content="Morning"/>
+        <ComboBoxItem Content="Noon" IsSelected="True"/>
+        <ComboBoxItem Content="Afternoon"/>
+        <ComboBoxItem Content="Golden Hour"/>
+        <ComboBoxItem Content="Dusk"/>
+        <ComboBoxItem Content="Night"/>
+      </ComboBox>
+
+      <!-- Aspect Ratio -->
+      <TextBlock Style="{StaticResource Label}" Text="Aspect Ratio"/>
+      <ComboBox x:Name="AspectRatioCombo" Style="{StaticResource Combo}">
+        <ComboBoxItem Content="1:1"/>
+        <ComboBoxItem Content="4:3" IsSelected="True"/>
+        <ComboBoxItem Content="16:9"/>
+        <ComboBoxItem Content="3:4"/>
+        <ComboBoxItem Content="9:16"/>
+      </ComboBox>
+
+      <!-- Material Details -->
+      <TextBlock Style="{StaticResource Label}" Text="Material Details (optional)"/>
+      <TextBox x:Name="MaterialDetailsBox" Style="{StaticResource TextBox}"
+               AcceptsReturn="True" Height="60" TextWrapping="Wrap"
+               VerticalScrollBarVisibility="Auto"
+               PlaceholderText="e.g. red brick facade, white trim, slate roof..."/>
+
+      <!-- Render Button -->
+      <Button x:Name="RenderButton" Content="Generate Render"
+              Style="{StaticResource PrimaryButton}"
+              Margin="0,16,0,0" Click="RenderButton_Click"/>
+
+      <!-- Status -->
+      <TextBlock x:Name="StatusText" Foreground="#9ca3af"
+                 TextWrapping="Wrap" Margin="0,8,0,0" Visibility="Collapsed"/>
+
+      <!-- Progress -->
+      <ProgressBar x:Name="ProgressBar" IsIndeterminate="True"
+                   Height="4" Margin="0,8,0,0"
+                   Background="#2d2d2d" Foreground="#2563eb"
+                   Visibility="Collapsed"/>
+
+      <!-- Result image -->
+      <Border x:Name="ResultBorder" Margin="0,12,0,0" Visibility="Collapsed">
+        <StackPanel>
+          <Image x:Name="ResultImage" Stretch="Uniform" MaxHeight="400"
+                 Cursor="Hand" MouseDown="ResultImage_MouseDown"/>
+          <Button x:Name="DownloadButton" Content="Save Image"
+                  Style="{StaticResource PrimaryButton}"
+                  Margin="0,8,0,0" Click="DownloadButton_Click"
+                  Background="#374151"/>
+        </StackPanel>
+      </Border>
+
+      <!-- Credits remaining -->
+      <TextBlock x:Name="CreditsText" Foreground="#6b7280"
+                 FontSize="11" Margin="0,12,0,0" Visibility="Collapsed"/>
+
+    </StackPanel>
+  </ScrollViewer>
+</Page>
