@@ -85,7 +85,7 @@ public partial class RenderPane : Page, IDockablePaneProvider
                     var client = new ApiClient(apiKey);
                     var result = await client.GenerateRenderAsync(bytes, options, _cts.Token);
                     _lastResultUrl = result.ImageUrl;
-                    ShowResultImage(result.ImageUrl);
+                    await ShowResultImageAsync(result.ImageUrl);
 
                     if (result.CreditsRemaining >= 0)
                     {
@@ -130,11 +130,16 @@ public partial class RenderPane : Page, IDockablePaneProvider
         App.RenderEvent.Raise();
     }
 
-    private void ShowResultImage(string imageUrl)
+    private async Task ShowResultImageAsync(string imageUrl)
     {
+        // Download the bytes first so the BitmapImage is fully loaded (and freezable)
+        // before we assign it to the Image control.
+        using var http = new HttpClient();
+        var bytes = await http.GetByteArrayAsync(imageUrl);
+
         var bitmap = new BitmapImage();
         bitmap.BeginInit();
-        bitmap.UriSource = new Uri(imageUrl);
+        bitmap.StreamSource = new MemoryStream(bytes);
         bitmap.CacheOption = BitmapCacheOption.OnLoad;
         bitmap.EndInit();
         bitmap.Freeze();
