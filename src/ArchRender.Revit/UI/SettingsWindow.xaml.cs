@@ -40,12 +40,7 @@ public partial class SettingsWindow : Window
 
     private static void NotifyRenderPane()
     {
-        // Refresh the render pane's button/banner state after key changes
-        if (System.Windows.Application.Current?.MainWindow is { } main)
-        {
-            var pane = main.FindName("RenderPaneContent") as RenderPane;
-            pane?.RefreshApiKeyState();
-        }
+        App.PaneInstance?.RefreshApiKeyState();
     }
 
     private void ShowStatus(string message, bool error)

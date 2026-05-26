@@ -19,6 +19,7 @@ public partial class RenderPane : Page, IDockablePaneProvider
     {
         InitializeComponent();
         RenderTypeCombo.SelectionChanged += RenderTypeCombo_SelectionChanged;
+        IsVisibleChanged += (_, _) => CheckApiKey();
         CheckApiKey();
     }
 

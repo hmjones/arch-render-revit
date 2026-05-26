@@ -15,6 +15,7 @@ public class App : IExternalApplication
     // Accessed by RenderPane to trigger view export on Revit's API thread
     internal static RenderEventHandler RenderHandler { get; } = new();
     internal static ExternalEvent? RenderEvent { get; private set; }
+    internal static RenderPane? PaneInstance { get; private set; }
 
     public Result OnStartup(UIControlledApplication application)
     {
@@ -29,6 +30,7 @@ public class App : IExternalApplication
     private static void RegisterDockablePane(UIControlledApplication application)
     {
         var provider = new RenderPane();
+        PaneInstance = provider;
         application.RegisterDockablePane(RenderPaneId, "ArchRender", provider);
     }
 
