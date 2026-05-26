@@ -1,3 +1,4 @@
+using System.IO;
 using Autodesk.Revit.DB;
 
 namespace ArchRender.Revit.Services;
@@ -22,7 +23,8 @@ public static class ViewExporter
             HLRandWFViewsFileType = ImageFileType.PNG,
             ImageResolution = ImageResolution.DPI_150,
             PixelSize = pixelSize,
-            ZoomType = ZoomFitType.FitPage,
+            ZoomType = ZoomFitType.Zoom,
+            Zoom = 100,
             ShadowViewsFileType = ImageFileType.PNG,
         };
 

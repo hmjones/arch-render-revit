@@ -1,3 +1,5 @@
+using System.IO;
+using System.Net.Http;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
@@ -181,6 +183,12 @@ public partial class RenderPane : Page, IDockablePaneProvider
             {
                 UseShellExecute = true
             });
+    }
+
+    private void MaterialDetailsBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        MaterialDetailsPlaceholder.Visibility = string.IsNullOrEmpty(MaterialDetailsBox.Text)
+            ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private RenderOptions BuildOptions() => new()

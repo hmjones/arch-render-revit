@@ -100,10 +100,16 @@
 
       <!-- Material Details -->
       <TextBlock Style="{StaticResource Label}" Text="Material Details (optional)"/>
-      <TextBox x:Name="MaterialDetailsBox" Style="{StaticResource TextBox}"
-               AcceptsReturn="True" Height="60" TextWrapping="Wrap"
-               VerticalScrollBarVisibility="Auto"
-               PlaceholderText="e.g. red brick facade, white trim, slate roof..."/>
+      <Grid>
+        <TextBox x:Name="MaterialDetailsBox" Style="{StaticResource TextBox}"
+                 AcceptsReturn="True" Height="60" TextWrapping="Wrap"
+                 VerticalScrollBarVisibility="Auto"
+                 TextChanged="MaterialDetailsBox_TextChanged"/>
+        <TextBlock x:Name="MaterialDetailsPlaceholder"
+                   Text="e.g. red brick facade, white trim, slate roof..."
+                   Foreground="#4b5563" Padding="8,6" IsHitTestVisible="False"
+                   VerticalAlignment="Top"/>
+      </Grid>
 
       <!-- Render Button -->
       <Button x:Name="RenderButton" Content="Generate Render"
