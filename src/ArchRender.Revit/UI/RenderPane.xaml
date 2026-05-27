@@ -133,21 +133,6 @@
                    Background="#e5e7eb" Foreground="#2563eb"
                    Visibility="Collapsed"/>
 
-      <!-- Result image -->
-      <Border x:Name="ResultBorder" Margin="0,14,0,0" Visibility="Collapsed">
-        <StackPanel>
-          <Image x:Name="ResultImage" Stretch="Uniform" MaxHeight="400"
-                 Cursor="Hand" MouseDown="ResultImage_MouseDown"/>
-          <Button x:Name="DownloadButton" Content="Save Image"
-                  Style="{StaticResource SecondaryButton}"
-                  Margin="0,8,0,0" Click="DownloadButton_Click"/>
-        </StackPanel>
-      </Border>
-
-      <!-- Credits remaining -->
-      <TextBlock x:Name="CreditsText" Foreground="#6b7280"
-                 FontSize="11" Margin="0,12,0,0" Visibility="Collapsed"/>
-
     </StackPanel>
   </ScrollViewer>
 </Page>

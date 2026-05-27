@@ -1,19 +1,15 @@
-using System.IO;
-using System.Net.Http;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media.Imaging;
 using Autodesk.Revit.UI;
 using ArchRender.Revit.Models;
 using ArchRender.Revit.Services;
-using Microsoft.Win32;
 
 namespace ArchRender.Revit.UI;
 
 public partial class RenderPane : Page, IDockablePaneProvider
 {
-    private string? _lastResultUrl;
     private CancellationTokenSource? _cts;
+    private RenderResultWindow? _currentResultWindow;
 
     public RenderPane()
     {
@@ -70,46 +66,63 @@ public partial class RenderPane : Page, IDockablePaneProvider
         _cts?.Cancel();
         _cts = new CancellationTokenSource();
         var options = BuildOptions();
+        var targetRatio = ImageCropper.ParseAspectRatio(options.AspectRatio);
 
         SetBusy(true);
-        ShowStatus("Exporting view...");
 
-        // Wire up callbacks — these fire on the Revit API thread, then we dispatch back to UI
+        // Open the result window with the spinner
+        _currentResultWindow = new RenderResultWindow();
+        var helper = new System.Windows.Interop.WindowInteropHelper(_currentResultWindow);
+        helper.Owner = System.Diagnostics.Process.GetCurrentProcess().MainWindowHandle;
+        _currentResultWindow.SetLoadingText("Exporting view...");
+        _currentResultWindow.Show();
+
+        var resultWindow = _currentResultWindow;
+
         App.RenderHandler.OnExported = async (bytes) =>
         {
             await Dispatcher.InvokeAsync(async () =>
             {
-                ShowStatus("Sending to ArchRender...");
                 try
                 {
-                    var client = new ApiClient(apiKey);
-                    var result = await client.GenerateRenderAsync(bytes, options, _cts.Token);
-                    _lastResultUrl = result.ImageUrl;
-                    await ShowResultImageAsync(result.ImageUrl);
-
-                    if (result.CreditsRemaining >= 0)
+                    // Crop the source to the target aspect ratio so the AI doesn't warp the building
+                    byte[] croppedBytes;
+                    try
                     {
-                        CreditsText.Text = $"{result.CreditsRemaining} credits remaining";
-                        CreditsText.Visibility = Visibility.Visible;
+                        croppedBytes = ImageCropper.CropToAspectRatio(bytes, targetRatio);
                     }
+                    catch (Exception ex)
+                    {
+                        resultWindow.ShowError($"Failed to crop view: {ex.Message}");
+                        SetBusy(false);
+                        return;
+                    }
+
+                    resultWindow.SetLoadingText("Sending to ArchRender...");
+
+                    var client = new ApiClient(apiKey);
+                    var result = await client.GenerateRenderAsync(croppedBytes, options, _cts.Token);
+
+                    resultWindow.SetLoadingText("Loading result...");
+                    await resultWindow.LoadResultAsync(result.ImageUrl, result.CreditsRemaining);
 
                     StatusText.Visibility = Visibility.Collapsed;
                 }
                 catch (OperationCanceledException)
                 {
-                    ShowStatus("Cancelled.");
+                    resultWindow.ShowError("Cancelled.");
                 }
                 catch (ApiException ex) when (ex.StatusCode == 401)
                 {
-                    ShowStatus("Invalid API key. Please check your settings.", isError: true);
+                    resultWindow.ShowError("Invalid API key. Please check your settings.");
                 }
                 catch (ApiException ex) when (ex.StatusCode == 402)
                 {
-                    ShowStatus("Not enough credits. Visit archrender.com to top up.", isError: true);
+                    resultWindow.ShowError("Not enough credits. Visit archrender.com to top up.");
                 }
                 catch (Exception ex)
                 {
-                    ShowStatus($"Error: {ex.Message}", isError: true);
+                    resultWindow.ShowError($"Error: {ex.Message}");
                 }
                 finally
                 {
@@ -122,65 +135,12 @@ public partial class RenderPane : Page, IDockablePaneProvider
         {
             Dispatcher.Invoke(() =>
             {
-                ShowStatus(msg, isError: true);
+                resultWindow.ShowError(msg);
                 SetBusy(false);
             });
         };
 
         App.RenderEvent.Raise();
-    }
-
-    private async Task ShowResultImageAsync(string imageUrl)
-    {
-        // Download the bytes first so the BitmapImage is fully loaded (and freezable)
-        // before we assign it to the Image control.
-        using var http = new HttpClient();
-        var bytes = await http.GetByteArrayAsync(imageUrl);
-
-        var bitmap = new BitmapImage();
-        bitmap.BeginInit();
-        bitmap.StreamSource = new MemoryStream(bytes);
-        bitmap.CacheOption = BitmapCacheOption.OnLoad;
-        bitmap.EndInit();
-        bitmap.Freeze();
-
-        ResultImage.Source = bitmap;
-        ResultBorder.Visibility = Visibility.Visible;
-    }
-
-    private async void DownloadButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (_lastResultUrl is null) return;
-
-        var dialog = new SaveFileDialog
-        {
-            Title = "Save ArchRender result",
-            Filter = "PNG Image|*.png",
-            FileName = $"archrender_{DateTime.Now:yyyyMMdd_HHmmss}.png",
-        };
-
-        if (dialog.ShowDialog() != true) return;
-
-        try
-        {
-            using var http = new HttpClient();
-            var bytes = await http.GetByteArrayAsync(_lastResultUrl);
-            await File.WriteAllBytesAsync(dialog.FileName, bytes);
-            ShowStatus($"Saved to {dialog.FileName}");
-        }
-        catch (Exception ex)
-        {
-            ShowStatus($"Save failed: {ex.Message}", isError: true);
-        }
-    }
-
-    private void ResultImage_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
-    {
-        if (e.ClickCount == 2 && _lastResultUrl is not null)
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(_lastResultUrl)
-            {
-                UseShellExecute = true
-            });
     }
 
     private void MaterialDetailsBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -210,8 +170,8 @@ public partial class RenderPane : Page, IDockablePaneProvider
     {
         StatusText.Text = message;
         StatusText.Foreground = isError
-            ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xf8, 0x71, 0x71))
-            : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x9c, 0xa3, 0xaf));
+            ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xdc, 0x26, 0x26))
+            : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x6b, 0x72, 0x80));
         StatusText.Visibility = Visibility.Visible;
     }
 }
