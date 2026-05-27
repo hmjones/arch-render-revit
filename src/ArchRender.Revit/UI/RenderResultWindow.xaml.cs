@@ -27,6 +27,22 @@ public partial class RenderResultWindow : Window
         });
     }
 
+    public void SetSourceBackdrop(byte[] pngBytes)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            var bitmap = new BitmapImage();
+            bitmap.BeginInit();
+            bitmap.StreamSource = new MemoryStream(pngBytes);
+            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+            bitmap.EndInit();
+            bitmap.Freeze();
+
+            SourceBackdrop.Source = bitmap;
+            SourceBackdrop.Visibility = Visibility.Visible;
+        });
+    }
+
     public async Task LoadResultAsync(string imageUrl, int? creditsRemaining)
     {
         _imageUrl = imageUrl;
@@ -47,6 +63,7 @@ public partial class RenderResultWindow : Window
             {
                 ResultImage.Source = bitmap;
                 LoadingPanel.Visibility = Visibility.Collapsed;
+                SourceBackdrop.Visibility = Visibility.Collapsed;
                 ResultImage.Visibility = Visibility.Visible;
                 ErrorPanel.Visibility = Visibility.Collapsed;
                 SaveButton.IsEnabled = true;

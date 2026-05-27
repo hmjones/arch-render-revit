@@ -9,7 +9,7 @@ public static class ViewExporter
     /// Exports the given 3D view to a PNG and returns the raw bytes.
     /// Revit appends the view name to the base file path, so we glob for the result.
     /// </summary>
-    public static byte[] ExportToPng(Document doc, View3D view, int pixelSize = 1024)
+    public static byte[] ExportToPng(Document doc, View3D view, int pixelSize = 2048)
     {
         var tempDir = Path.GetTempPath();
         var baseName = $"archrender_export_{Guid.NewGuid():N}";

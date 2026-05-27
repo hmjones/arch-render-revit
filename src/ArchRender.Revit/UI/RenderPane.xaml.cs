@@ -98,6 +98,8 @@ public partial class RenderPane : Page, IDockablePaneProvider
                         return;
                     }
 
+                    // Show the cropped source as a dimmed backdrop while the AI runs
+                    resultWindow.SetSourceBackdrop(croppedBytes);
                     resultWindow.SetLoadingText("Sending to ArchRender...");
 
                     var client = new ApiClient(apiKey);

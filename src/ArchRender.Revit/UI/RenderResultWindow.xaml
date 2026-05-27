@@ -34,19 +34,30 @@
     <!-- Main content area -->
     <Border Grid.Row="0" Background="#1e293b" Margin="0">
       <Grid>
+        <!-- Source image backdrop during loading (dimmed) -->
+        <Image x:Name="SourceBackdrop" Stretch="Uniform" Opacity="0.35"
+               Visibility="Collapsed"/>
+
         <!-- Loading state -->
-        <StackPanel x:Name="LoadingPanel"
-                    VerticalAlignment="Center" HorizontalAlignment="Center">
-          <ProgressBar IsIndeterminate="True"
-                       Width="240" Height="6"
-                       Background="#334155" Foreground="#60a5fa"
-                       BorderThickness="0"/>
-          <TextBlock x:Name="LoadingText"
-                     Text="Exporting view..."
-                     Foreground="#cbd5e1"
-                     HorizontalAlignment="Center"
-                     Margin="0,16,0,0" FontSize="14"/>
-        </StackPanel>
+        <Grid x:Name="LoadingPanel">
+          <Rectangle Fill="#1e293b" Opacity="0.3"/>
+          <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+            <Border Background="#0f172a" CornerRadius="10" Padding="28,20"
+                    BorderBrush="#334155" BorderThickness="1">
+              <StackPanel>
+                <ProgressBar IsIndeterminate="True"
+                             Width="240" Height="6"
+                             Background="#1e293b" Foreground="#60a5fa"
+                             BorderThickness="0"/>
+                <TextBlock x:Name="LoadingText"
+                           Text="Exporting view..."
+                           Foreground="#e2e8f0"
+                           HorizontalAlignment="Center"
+                           Margin="0,14,0,0" FontSize="14" FontWeight="SemiBold"/>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </Grid>
 
         <!-- Result image -->
         <Image x:Name="ResultImage" Stretch="Uniform" Visibility="Collapsed"
