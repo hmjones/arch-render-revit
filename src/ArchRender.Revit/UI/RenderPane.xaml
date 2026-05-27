@@ -108,9 +108,9 @@
       <!-- Quality -->
       <TextBlock Style="{StaticResource Label}" Text="Quality"/>
       <ComboBox x:Name="QualityCombo" Style="{StaticResource Combo}"
-                ToolTip="Ultra uses a higher-quality AI model. Slower but more detail and fewer artefacts.">
-        <ComboBoxItem Content="Standard" IsSelected="True"/>
-        <ComboBoxItem Content="Ultra"/>
+                ToolTip="Standard: 1 credit, faster. Ultra: 2 credits, higher-quality AI model with more detail and fewer artefacts.">
+        <ComboBoxItem Content="Standard (1 credit)" IsSelected="True"/>
+        <ComboBoxItem Content="Ultra (2 credits)"/>
       </ComboBox>
 
       <!-- Material Details -->
