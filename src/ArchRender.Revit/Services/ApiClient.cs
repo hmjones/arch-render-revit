@@ -34,6 +34,7 @@ public class ApiClient
             environment = options.Environment,
             aspectRatio = options.AspectRatio,
             materialDetails = options.MaterialDetails,
+            useUltraModel = options.UseUltraModel,
         };
 
         using var request = new HttpRequestMessage(HttpMethod.Post, EdgeFunctionUrl);

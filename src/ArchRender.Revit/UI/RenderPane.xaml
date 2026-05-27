@@ -105,6 +105,14 @@
         <ComboBoxItem Content="9:16"/>
       </ComboBox>
 
+      <!-- Quality -->
+      <TextBlock Style="{StaticResource Label}" Text="Quality"/>
+      <ComboBox x:Name="QualityCombo" Style="{StaticResource Combo}"
+                ToolTip="Ultra uses a higher-quality AI model. Slower but more detail and fewer artefacts.">
+        <ComboBoxItem Content="Standard" IsSelected="True"/>
+        <ComboBoxItem Content="Ultra"/>
+      </ComboBox>
+
       <!-- Material Details -->
       <TextBlock Style="{StaticResource Label}" Text="Material Details (optional)"/>
       <Grid>

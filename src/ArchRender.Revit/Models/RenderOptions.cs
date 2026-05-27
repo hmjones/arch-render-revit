@@ -8,6 +8,7 @@ public class RenderOptions
     public string Environment { get; set; } = "Suburban";
     public string AspectRatio { get; set; } = "4:3";
     public string MaterialDetails { get; set; } = "";
+    public bool UseUltraModel { get; set; } = false;
 }
 
 public class RenderResult

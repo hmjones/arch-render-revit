@@ -160,6 +160,7 @@ public partial class RenderPane : Page, IDockablePaneProvider
         Environment = (EnvironmentCombo.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Suburban",
         AspectRatio = (AspectRatioCombo.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "4:3",
         MaterialDetails = MaterialDetailsBox.Text.Trim(),
+        UseUltraModel = ((QualityCombo.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Standard") == "Ultra",
     };
 
     private void SetBusy(bool busy)
